@@ -1,0 +1,66 @@
+ qq.gamma <- function(data, time, status, xlab = "gamma quantiles \n based on MLE's", ylab = "ordered data", pch = NULL,lty = NULL, col = NULL)
+{
+## Purpose: qqplot for gamma distribution for one sample
+##-------------------------------------------------------------------
+## Arguments: ##  data  A Surv object, or a list of Surv object 
+##         time, and status, are each a list of vector
+##                 
+##-------------------------------------------------------------------
+## Author: Mara Tableman, Date: 2 Janury 2003, 01:05
+	on.exit(browser())
+	t.c <- class(data)
+	if((!is.null(t.c)) && t.c == "Surv")
+		data <- list(data)
+	t.k <- length(data)
+	t.mt <- class(time)
+	if(!is.null(t.mt))
+		time <- list(time)
+	t.ms <- class(status)
+	if(!is.null(t.ms))
+		status <- list(status)
+	if(is.null(pch))
+		pch <- 1:t.k
+	if(is.null(lty))
+		lty <- 1:t.k
+	if(is.null(col))
+		col <- 1 + 1:t.k
+	t.sf <- lapply(data, function(s)
+	{
+		t.s <- summary(survfit(s, type = "kaplan-meier"))
+		t.ss <- t.s$surv
+		t.s$surv <- (t.ss + c(1, t.ss[ - length(t.ss)]))/2
+		t.s
+	}
+	)
+	t.rgs <- range(sapply(t.sf, function(s)
+	range(s$surv)))
+	t.rgt <- range(sapply(t.sf, function(s)
+	range(s$time)))
+	for(t.g in 1:t.k) {
+		sr <- vector(mode = "numeric", length = 2)
+		status1 <- status[[t.g]]
+		time1 <- time[[t.g]]
+		minusloglik.gamma <- function(sr, time1, status1)
+		{
+ - log(prod(dgamma(time1, sr[1], sr[2])^(status1) * (1 - pgamma(time1, sr[1], sr[2]))^(1 - status1)))
+		}
+		mlegamma <- nlminb(start = c(0.05, 0.05), obj = minusloglik.gamma, lower = c(0.001, 0.0001), upper = c(Inf, Inf), time1 = time1, status1 = status1)
+		mles <- mlegamma$parameters
+		names(mles) <- c("shape", "rate")
+		print(mles)
+		par(new = T)
+		xmax <- max(qgamma(1 - t.rgs, mles[1], mles[2]))
+		ymax <- max(t.rgt)
+		plot(qgamma(1 - t.rgs, mles[1], mles[2]), t.rgt, type = "n", xlab = " ", ylab = "  ", xlim = c(0, xmax), ylim = c(0,ymax), axes = F)
+		points(qgamma(1 - t.sf[[t.g]]$surv, mles[1], mles[2]), t.sf[[t.g]]$time, pch = pch[t.g], col = 1, lwd = 2)
+		reg <- lsfit(qgamma(1 - t.sf[[t.g]]$surv, mles[1], mles[2]), t.sf[[t.g]]$time)
+		abline(reg, lty = lty[t.g], col = 1, lwd = 2)
+	}
+	abline(h = 0, v = 0)
+	abline(a=0,b=1,lwd=3)
+	mtext(side = 1, "gamma quantiles \n based on MLE's", cex = 1.8)
+	mtext(side = 2, "ordered data", cex = 1.8, line = -0.3)
+	on.exit()
+	"qq.gamma:done"
+}
+ 

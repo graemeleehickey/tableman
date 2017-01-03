@@ -1,0 +1,38 @@
+cutpt.coxph <- function(object, data, q = seq(.1,.9,.1))
+{
+	# This code finds the best cut point.
+	# REQUIRED: Before using this function, put the variable to be dichotomized in 
+	# the first column of the data (use "move.col") and generate an additional 
+	# column of Bernoulli values of the size the number of rows.  Run "coxph" with 
+	# the specific model including the dichotomized variable.  This provides the 
+	# necessary formula within this function automatically.
+	# object: coxph output; used to extract a specific model form.
+	# data: necessary to run the specific model.
+	# OPTIONS: q: If not provided, the default is considered. Quantiles are  
+        # computed.
+	# Author: Jong Sung Kim, Dec. 9th, 2002
+	##########################################################
+	l <- length(q)
+	# number of different quantiles
+	m <- ncol(data)
+	# number of columns in the data
+	pl <- rep(0, l)
+	# maximum profile likelihood
+	cutvariable <- data[, 1]
+	# variable for cut point analysis
+	quantiles <- quantile(cutvariable, q)
+	# quantiles of cutvariable
+	for(i in 1:l) {
+		data[, m] <- as.integer(cutvariable >= quantiles[i])
+		# assignment of groups
+		data.fit <- coxph(object$formula, data)
+		# what is necessary
+		pl[i] <- data.fit$loglik[2]
+	}
+	out <- cbind(quantiles, pl)
+	# quantiles and corresponding max. profile log-likelihoods 
+	cutpt <- out[, 1][out[, 2] == max(out[, 2])][1]
+	# when tied, the smallest 
+	# point is chosen.
+	return(cutpt,out)
+}

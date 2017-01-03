@@ -1,0 +1,56 @@
+extcox.1Et <- function(DATA, t0)
+{
+        ##=======================
+        ## Purpose: To put a data frame into the Anderson-Gill form with Start Stop variables, 
+        ##  along with two created time-dependent variables of the form E x g1 and E x g2, 
+        ##  where E is an exposure variable, and g1 and g2 are "heavyside" functions, the sum
+        ##  of which always = 1  at any time.  This works only for one exposure variable.
+        ##======================
+        ## Caution: Must put the exposure variable, status variable, and the time variable into columns 2, 3, 
+        ## and 4, respectively.
+        ## Arguments: DATA is a data frame, which includes ET: exposure variable and 
+        ##  t0 is the specified time t0 for the heavyside functions g1 and g2.
+        ##===================================================
+        ## Value: A new data frame in the Andersen-Gill counting process form.  The two new 
+        ## time-dependent exposure variables are called ET1 and ET2. 
+        ## Name this data frame as DATACOUNTPROC.
+        ##=============================
+        ## Author: Jong Sung Kim  30.March 2003  Portland, Oregon USA
+        ##===========================================
+        TIME <- DATA[, 4]
+        # 4th col contains survival times.
+        DATA[, 2][DATA[, 2] == 2] <- 0
+        # 2nd col contains exposure values. 
+        # 2 becomes 0. You don't need this if you do not have exposure level 2 or larger
+        # We now make a data frame for cases with survival times >= t0 days and create
+        # the Start and Stop variables and the two "defined" variables.
+        # We create two rows for each subject.
+        DATALT <- DATA[(TIME < t0),  ]
+        # sub data frame for subjects whose observed times 
+        # are less than t0
+        n1 <- nrow(DATALT)
+        # no. of subjects whose observed times are less than t0
+        DATALT$Start <- rep(0, n1)
+        DATALT$Stop <- DATALT[, 4]
+        # TIME
+        DATALT$Clinicg1t <- DATALT[, 2]
+        DATALT$Clinicg2t <- rep(0, n1)
+        # Clinic
+        DATAGTE <- DATA[(TIME >= t0),  ]
+        n2 <- nrow(DATAGTE)
+        # no. of subjects whose observed times are greater than or equal to t0
+        NEWDATAGTE <- rbind(DATAGTE, DATAGTE)
+        # sub data frame for subjects whose observed  
+        # times are greater than or equal to t0,
+        # double the size
+        NEWDATAGTE$Start <- c(rep(0, n2), rep(t0, n2))
+        NEWDATAGTE$Stop <- c(rep(t0, n2), DATAGTE[, 4])
+        NEWDATAGTE[1:n2, 3] <- 0
+        NEWDATAGTE$Clinicg1t <- c(DATAGTE[, 2], rep(0, n2))
+        NEWDATAGTE$Clinicg2t <- c(rep(0, n2), DATAGTE[, 2])
+        # We now merge the two data frames together into one. This data frame satisfies 
+        # the Anderson-Gill formulation of the proportional hazards model as a
+        # counting process.  The model can be fit using the S function coxph.
+        COUNTPROC <- rbind(DATALT, NEWDATAGTE)
+        COUNTPROC
+}

@@ -1,0 +1,52 @@
+##======================Example with ADDICTS data set:
+#Prelimnaries in order to use the function optimal.change.point.
+#Pick any time point within the scope of your data to start:  We pick 100 days.
+##Caution: Must put the exposure variable in column 2, the status variable in column 3, 
+## and the time variable into column 4 of your data frame.
+attach(ADDICTS)
+out<-extcox.1Et(ADDICTS,100)#puts in Andersen-Gill counting process form
+temp.ext<-coxph(Surv(Start, Stop, Status) ~Prison+Dose+ET1+ET2, data = out) 
+temp.ext
+#temp.ext is the coxph object that gives the necessary formula within the function optimal.change.point
+##==============================The function optimal.change.point follows:
+optimal.change.point<-function(data,time,status,object){
+##=======================
+        ## Purpose: To determine the optimal change point to put a data frame into the Anderson-Gill form 
+        ## with Start Stop variables, 
+        ## along with two created time-dependent variables of the form ET1=E x g1 and ET2=E x g2, 
+        ## where E is an exposure variable, and g1 and g2 are "heavyside" functions, the sum
+        ## of which always = 1 at any time.  This works only for one exposure variable.  The procedure 
+        ## finds the t0 that maximizes the profile log-likelihood.
+##======================
+        ## The arguments:
+        ## data: data frame you want to be put into counting process form with one exposure
+        ## variable and with one change point.
+        ## time:  variable name for the survival times
+        ## status:  variable name for censored (alive) or uncensored (dead) 
+        ## object:  coxph object
+##===================================================
+        ## Author:  Mara Tableman, Date: 11.December 2003, 22:00, Portland, Oregon
+t.u<-time[status==1]
+q<-seq(.1,.9,.01)
+t0<-quantile(t.u,q)
+l<-length(t0)
+loglik<-rep(1,l)
+for ( k in 1:l) {
+out<-extcox.1Et(data,t0[k]+.00001)
+extcox.fit <- coxph(object$formula, data = out)
+extcox.fit
+loglik[k]<-extcox.fit$loglik[2]
+}
+ best<-t0[loglik==max(loglik)]
+ print(best)
+return(t0,loglik)
+} #function ends
+
+#====================Example contiunes:
+best<-optimal.change.point(data=ADDICTS,time=Days.survival,status=Status,object=temp.ext)
+cbind(best$t0+.00001,best$loglik) # This prints out the actual of t0+.00001 and the log-likelhood.
+plot(best$t0+.0001,best$loglik,type="l",xlab="change point",ylab="profile log-likelihood",lwd=2)
+out<-extcox.1Et(ADDICTS,464) # Puts in Andersen-Gill counting process form. 464 days is optimal change point.
+fit4<-coxph(Surv(Start, Stop, Status) ~Prison+Dose+ET1+ET2, data = out) 
+fit4
+

@@ -1,0 +1,32 @@
+quantile.km <- function(data, p, eps, z)
+{
+## data is survfit object, p is between 0 and 1
+## eps is epsilon 0f 0.05 or bigger, 
+## z iz z-score for confidence coefficient
+	time <- summary(data)$time
+	ni <- summary(data)$n.risk
+	di <- summary(data)$n.event
+	surv <- summary(data)$surv
+	stderr <- summary(data)$std.err
+	qp <- min(time[surv <= 1 - p])	
+	## The point estimate of pth-quantile 
+	se.S.qp <- stderr[surv == max(surv[surv <= 1 - p])]	
+	## S.qp is the standard error of the estimated survival
+   ## probability at qp.
+	u.p <- max(time[surv >= 1 - p + eps])	
+	# the largest time at which surv >= 1-p+eps
+	l.p <- min(time[surv <= 1 - p - eps])	
+	# the smallest time at which surv <=1-p-eps
+	S.u.p <- surv[time == u.p]	# survival probability at u.p
+	S.l.p <- surv[time == l.p]	# survival probability at l.p
+	f.qp <- (S.u.p - S.l.p)/(l.p - u.p)	
+	## estimated probability density at pth-quantile
+	se.qp <- se.S.qp/f.qp	
+	## estimated standard error of the sample pth-quantile
+	LCL <- qp - z * se.qp
+	UCL <- qp + z * se.qp
+	out <- round(data.frame(qp, se.S.qp, f.qp, se.qp, LCL, UCL), 4)
+	print("summary")
+	print(out, invisible(1))	
+	##print("An approximate 1-alpha confidence interval for the true pth-quantile")
+}

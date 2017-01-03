@@ -1,0 +1,75 @@
+extcox.twochange<-function(DATA, t0, t1)
+{
+##=======================
+## Purpose: To put a data frame into the Anderson-Gill form with Start Stop variables, 
+##  along with three created time-dependent variables of the form E x g1 and E x g2 and E x g2
+##  where E is an exposure variable, and g1, g2, and g3 are "heavyside" functions, the sum
+##  of which always = 1  at any time.  This works only for one exposure variable where we model 
+##  in two change points t0 and t1.
+##======================
+## Caution: Must put the exposure variable in column 2, the status variable in column 3,
+## and the time variable into column 4,.
+## Arguments: DATA is a data frame, which includes ET: exposure variable and 
+##  t0 and t1 are the specified times t0 for the heavyside functions g1, g2, and g3.
+##===================================================
+## Value: A new data frame in the Andersen-Gill counting process form.  The three new 
+## time-dependent exposure variables are called ET1, ET2, and ET3. 
+## Name this data frame as COUNTPROC.
+##=============================
+## Author: Mara Tableman 26.July 2003  Zuerich, Switzerland.
+##===========================================
+	TIME <- DATA[, 4]	# 4th col contains survival times.
+	DATA[, 2][DATA[, 2] == 2] <- 0	# 2nd col contains exposure values. 
+# 2 becomes 0. You don't need this if you do not have exposure level 2 or larger
+# We now make a data frame for cases with survival times >= t0 days and create
+# the Start and Stop variables and the two "defined" variables.
+# We create two rows for each subject.
+	DATALT <- DATA[(TIME < t0),  ]	# sub data frame for subjects whose observed times 
+# are less than t0
+	n1 <- nrow(DATALT)	# no. of subjects whose observed times are less than t0
+	DATALT$Start <- rep(0, n1)
+	DATALT$Stop <- DATALT[, 4]	# TIME
+	DATALT$ET1 <- DATALT[, 2]
+	DATALT$ET2 <- rep(0, n1)	# ET X g
+	DATALT$ET3 <- rep(0, n1)
+        DATAGTE <- DATA[(TIME >= t0)&&(TIME < t1,  ]
+	n2 <- nrow(DATAGTE)	# no. of subjects whose observed times are greater than or equal to t0 
+                                # less than t1.  
+	NEWDATAGTE <- rbind(DATAGTE, DATAGTE)	# sub data frame for subjects whose observed  
+# times are greater than or equal to t0 and less than t1, 
+# double the size
+	NEWDATAGTE$Start <- c(rep(0, n2), rep(t0, n2))
+	NEWDATAGTE$Stop <- c(rep(t0, n2), DATAGTE[, 4])
+	NEWDATAGTE[1:n2, 3] <- 0
+	NEWDATAGTE$ET1 <- c(DATAGTE[, 2], rep(0, n2))
+	NEWDATAGTE$ET2 <- c(rep(0, n2), DATAGTE[, 2])	
+        NEWDATAGTE$ET3 <- rep(0,2*n2)
+
+        DATAGTEt1 <- DATA[(TIME >= t1), ] #sub data frame for subjects whose observed 
+# times are great than or equal to t1, tripple the size.
+        n3 <- nrow(DATAGTEt1)
+        k<-2*n3
+        NEWDATAGTEt1 <- rbind(DATAGTEt1,DATAGTEt1,DATAGTEt1)
+        NEWDATAGTEt1$Start <- c(rep(0,n3),rep(to,n3),rep(t1,n3))
+        NEWDATAGTEt1$Stop <- c(rep(t0,n3),rep(t1,n3),DATAGTEt1[, 4])
+        NEWDATAGTEt1[1:k] <- 0
+        NEWDATAGTEt1$ET1 <- c(DATAGTEt1[,2],rep(0,k))
+        NEWDATAGTEt1$ET2 <- c(rep(0,n3),DATAGTEt1[,2],rep(0,n3))
+        NEWDATAGTEt1$ET3 <- c(rep(0,k), DATAGTEt1[,2])
+        
+# We now merge the three data frames together into one. This data frame satisfies 
+# the Anderson-Gill formulation of the proportional hazards model as a
+# counting process.  The model can be fit using the S function coxph.
+	COUNTPROC <- rbind(DATALT, NEWDATAGTE, NEWDATAGTEt1)
+      # COUNTPROC
+}
+> 
+
+
+
+
+
+
+
+
+

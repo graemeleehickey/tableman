@@ -1,0 +1,42 @@
+ qq.loglogistic <- function(data, xlab = "standard logistic \n quantiles", ylab = 
+	"ordered log data", pch = NULL, lty = NULL, col = NULL)
+{
+## Purpose: qqplot for loglogistic distribution for one or several samples 
+##-------------------------------------------------------------------
+## Arguments: ##  data  A Surv object, or a list of such objects
+##    
+##--------------------------------------------------------------------
+## Author: Mara Tableman, Date: 24 December 2002, 18:45
+	on.exit(browser())
+	t.c <- class(data)
+	if((!is.null(t.c)) && t.c == "Surv")
+		data <- list(data)
+	t.k <- length(data)
+	if(is.null(pch))
+		pch <- 1:t.k
+	if(is.null(lty))
+		lty <- 1:t.k
+	if(is.null(col))
+		col <- 1 + 1:t.k
+	t.sf <- lapply(data, function(s)
+	{
+		t.s <- summary(survfit(s, type = "kaplan-meier"))
+		t.ss <- t.s$surv
+		t.s$surv <- (t.ss + c(1, t.ss[ - length(t.ss)]))/2
+		t.s
+	}
+	)
+	t.rgs <- range(sapply(t.sf, function(s)
+	range(s$surv)))
+	t.rgt <- range(sapply(t.sf, function(s)
+	range(s$time)))
+	plot(qlogis(1 - t.rgs, 0, 1), log(t.rgt), type = "n", xlab = xlab, ylab = ylab)
+	for(t.g in 1:t.k) {
+		points(qlogis(1 - t.sf[[t.g]]$surv, 0, 1), log(t.sf[[t.g]]$time), pch = pch[t.g], col = 1)
+		t.r <- survReg(data[[t.g]] ~ 1, dist = "loglogistic")
+		abline(t.r$coef, t.r$scale, lty = lty[t.g], col = 1)
+	}
+	on.exit()
+	"qq.loglogistic:done"
+}
+ 

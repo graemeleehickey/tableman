@@ -1,0 +1,8 @@
+  
+ ## Produces the log of the Weibull likelihood function evaluated 
+ ## at a parameter value specified under the null hypothesis
+ ## Arguements:  time, status, shape=alpha (=1 for exponential), 
+ ##              theta=1/lambda, where lambda is the scale for Weibull.
+ ## Author:  Mara Tableman  23 December 2002  23:50.
+ weib.loglik.theta <- function(time,status,shape,theta)
+{log(prod(dweibull(time, shape, theta)^(status)*(1-pweibull(time, shape, theta))^(1 - status)))}

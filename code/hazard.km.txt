@@ -1,0 +1,22 @@
+ 
+hazard.km <- function(data){
+## Author: Mara Tableman  Date: 20 November 2002 
+## Purpose:  To compute the two types of empirical hazards,
+##           and the cumulative hazards along their s.e.'s
+## Arguments:  data is survfit object
+	time <- summary(data)$time
+	ni <- summary(data)$n.risk
+	di <- summary(data)$n.event
+	surv <- summary(data)$surv
+	stderr <- summary(data)$std.err
+	hitilde <- di/ni
+	tau <- diff(time, lag = 1)	#length of interval to right of ti
+	tau[length(tau) + 1] <- NA
+	hihat <- hitilde/tau
+	Hhat <-  -log(surv)
+	Htilde <- cumsum(hitilde)
+	sqri <- di/(ni^2)
+	se.Hhat <- stderr/surv
+	se.Htilde <- sqrt(cumsum(sqri))
+	hazardtable <- round(data.frame(time, ni, di, hihat, hitilde, Hhat,se.Hhat, Htilde, se.Htilde),4)
+	}
